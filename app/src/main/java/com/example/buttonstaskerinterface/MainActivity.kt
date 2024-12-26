@@ -14,16 +14,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.buttonstaskerinterface.ui.theme.ButtonsTaskerInterfaceTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var bleManager: BLEManager
+    private var bleValue by mutableStateOf("Waiting for BLE value...")
+
 
     private val permissionsToRequest = arrayOf(
         Manifest.permission.BLUETOOTH,
@@ -37,6 +47,12 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        bleManager = BLEManager(applicationContext).apply {
+            onValueChanged = { value ->
+                // Update the state whenever the BLE value changes
+                bleValue = value
+            }
+        }
         setContent {
             ButtonsTaskerInterfaceTheme {
                 val viewModel = viewModel<MainViewModel>()
@@ -71,15 +87,22 @@ class MainActivity : ComponentActivity() {
                         Intent(applicationContext, BLEService::class.java).also {
                             it.action = BLEService.Actions.START.toString()
                             startService(it)
+                            bleManager.startScan("ESP32_BLE_Server")
                         }
                     }){
                         Text("Start the interface")
                     }
                     Divider()
+                    Text("Current BLE Value: $bleValue")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+
                     Button(onClick = {
                         Intent(applicationContext, BLEService::class.java).also {
                             it.action = BLEService.Actions.STOP.toString()
                             startService(it)
+                            bleManager.disconnect()
                         }
                     }){
                         Text("Stop the interface")
