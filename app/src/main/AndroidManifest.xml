@@ -35,6 +35,12 @@
             </intent-filter>
         </activity>
         <service android:name=".BLEService" android:foregroundServiceType="location"/>
+        <receiver android:name=".TaskerBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.buttonstaskerinterface.BLE_INTENT" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

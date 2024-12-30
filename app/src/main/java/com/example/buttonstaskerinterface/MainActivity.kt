@@ -1,17 +1,16 @@
 package com.example.buttonstaskerinterface
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,15 +25,15 @@ import androidx.compose.ui.Modifier
 import com.example.buttonstaskerinterface.ui.theme.ButtonsTaskerInterfaceTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var bleManager: BLEManager
-    private var bleValue by mutableStateOf("Waiting for BLE value...")
 
 
+    @SuppressLint("InlinedApi")
     private val permissionsToRequest = arrayOf(
         Manifest.permission.BLUETOOTH,
         Manifest.permission.BLUETOOTH_ADMIN,
@@ -47,15 +46,12 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        bleManager = BLEManager(applicationContext).apply {
-            onValueChanged = { value ->
-                // Update the state whenever the BLE value changes
-                bleValue = value
-            }
-        }
+
         setContent {
             ButtonsTaskerInterfaceTheme {
                 val viewModel = viewModel<MainViewModel>()
+
+                val bleValue by viewModel.bleValue.observeAsState("Waiting for BLE value...")
                 val dialogQueue = viewModel.visiblePermissionDialogQueue
 
                 val permissionsResultLauncher = rememberLauncherForActivityResult(
@@ -83,29 +79,14 @@ class MainActivity : ComponentActivity() {
                         Text(text = "request permissions")
                     }
                     Divider()
-                    Button(onClick = {
-                        Intent(applicationContext, BLEService::class.java).also {
-                            it.action = BLEService.Actions.START.toString()
-                            startService(it)
-                            bleManager.startScan("ESP32_BLE_Server")
-                        }
-                    }){
-                        Text("Start the interface")
+                    Button(onClick = { viewModel.startInterface() }) {
+                        Text("Start the Interface")
                     }
                     Divider()
                     Text("Current BLE Value: $bleValue")
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-
-                    Button(onClick = {
-                        Intent(applicationContext, BLEService::class.java).also {
-                            it.action = BLEService.Actions.STOP.toString()
-                            startService(it)
-                            bleManager.disconnect()
-                        }
-                    }){
-                        Text("Stop the interface")
+                    Button(onClick = { viewModel.stopInterface() }) {
+                        Text("Stop the Interface")
                     }
                 }
 
